@@ -3,7 +3,7 @@ import styled from "styled-components";
 import Grid, { BoardState, Scores } from "./components/Grid";
 import Modal from "./components/Modal";
 import Toast from "./components/Toast";
-import { MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
+import { BACKSPACE, ENTER, MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
 import { hasWon, isValidGuess, scoreWord, wordOfTheDay } from "./words/utils";
 
 const initialBoardState: BoardState = ["", "", "", "", "", ""];
@@ -30,59 +30,74 @@ function App() {
   >([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  const onEnter = useCallback(() => {
+    if (boardState[activeRow].length < MAX_WORD_LENGTH) {
+      setSubmissionErrors([...submissionErrors, "Not enough letters."]);
+      scheduleDismiss();
+    } else {
+      if (isValidGuess(boardState[activeRow])) {
+        const score = scoreWord(boardState[activeRow], wordOfTheDay);
+        setScores([
+          ...scores.slice(0, activeRow),
+          score,
+          ...scores.slice(activeRow + 1),
+        ]);
+
+        if (hasWon(score)) {
+          setGameStatus(GameStatus.Win);
+          return;
+        }
+
+        const nextRow = activeRow + 1;
+        if (nextRow > MAX_GUESSES - 1) {
+          setGameStatus(GameStatus.Lose);
+          return;
+        } else {
+          setActiveRow(nextRow);
+        }
+      } else {
+        setSubmissionErrors([...submissionErrors, "Not in word list."]);
+        scheduleDismiss();
+      }
+    }
+  }, [activeRow, boardState, scores, submissionErrors]);
+
+  const onDelete = useCallback(() => {
+    setBoardState([
+      ...boardState.slice(0, activeRow),
+      boardState[activeRow].slice(0, -1),
+      ...boardState.slice(activeRow + 1),
+    ]);
+  }, [activeRow, boardState]);
+
+  const onCharKey = useCallback(
+    (key) => {
+      if (boardState[activeRow].length < MAX_WORD_LENGTH) {
+        setBoardState([
+          ...boardState.slice(0, activeRow),
+          (boardState[activeRow] += key),
+          ...boardState.slice(activeRow + 1),
+        ]);
+      }
+    },
+    [activeRow, boardState]
+  );
+
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
       if (gameStatus !== GameStatus.InProgress) return;
 
       if (!event.metaKey) {
-        if (event.key === "Enter") {
-          if (boardState[activeRow].length < MAX_WORD_LENGTH) {
-            setSubmissionErrors([...submissionErrors, "Not enough letters."]);
-            scheduleDismiss();
-          } else {
-            if (isValidGuess(boardState[activeRow])) {
-              const score = scoreWord(boardState[activeRow], wordOfTheDay);
-              setScores([
-                ...scores.slice(0, activeRow),
-                score,
-                ...scores.slice(activeRow + 1),
-              ]);
-
-              if (hasWon(score)) {
-                setGameStatus(GameStatus.Win);
-                return;
-              }
-
-              const nextRow = activeRow + 1;
-              if (nextRow > MAX_GUESSES - 1) {
-                setGameStatus(GameStatus.Lose);
-                return;
-              } else {
-                setActiveRow(nextRow);
-              }
-            } else {
-              setSubmissionErrors([...submissionErrors, "Not in word list."]);
-              scheduleDismiss();
-            }
-          }
-        } else if (event.key === "Backspace") {
-          setBoardState([
-            ...boardState.slice(0, activeRow),
-            boardState[activeRow].slice(0, -1),
-            ...boardState.slice(activeRow + 1),
-          ]);
+        if (event.key === ENTER) {
+          onEnter();
+        } else if (event.key === BACKSPACE) {
+          onDelete();
         } else if (/^[a-zA-Z]{1}$/.test(event.key)) {
-          if (boardState[activeRow].length < MAX_WORD_LENGTH) {
-            setBoardState([
-              ...boardState.slice(0, activeRow),
-              (boardState[activeRow] += event.key),
-              ...boardState.slice(activeRow + 1),
-            ]);
-          }
+          onCharKey(event.key);
         }
       }
     },
-    [activeRow, boardState, gameStatus, scores, submissionErrors]
+    [gameStatus, onCharKey, onDelete, onEnter]
   );
 
   useEffect(() => {
