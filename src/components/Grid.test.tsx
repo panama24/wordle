@@ -1,22 +1,30 @@
 import { render } from "@testing-library/react";
 import Grid, { GridRow, Tile } from "./Grid";
 
+const scores = Array(6).map(() => Array(5).fill(null));
+
 describe("Grid", () => {
   test("renders the correct number of rows", () => {
     const boardState = ["", "", "", "", "", ""];
-    const { queryAllByRole } = render(<Grid state={boardState} />);
+    const { queryAllByRole } = render(
+      <Grid state={boardState} scores={scores} />
+    );
     expect(queryAllByRole("row")).toHaveLength(6);
   });
 });
 
 describe("GridRow", () => {
   test("renders the correct number of tiles within the rows when there are no letters", () => {
-    const { queryAllByRole } = render(<GridRow letters="" />);
+    const { queryAllByRole } = render(
+      <GridRow letters="" scores={scores[0]} />
+    );
     expect(queryAllByRole("tile")).toHaveLength(5);
   });
 
   test("renders the correct number of tiles within the rows when there are letters", () => {
-    const { queryAllByRole } = render(<GridRow letters="hello" />);
+    const { queryAllByRole } = render(
+      <GridRow letters="hello" scores={scores[0]} />
+    );
     expect(queryAllByRole("tile")).toHaveLength(5);
   });
 });

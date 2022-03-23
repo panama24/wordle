@@ -1,4 +1,4 @@
-import { getWord, mapLetterIndexes, scoreWord } from "./utils";
+import { getWord, isValidGuess, mapLetterIndexes, scoreWord } from "./utils";
 
 describe("getWord", () => {
   it("returns a word from the word list", () => {
@@ -6,6 +6,16 @@ describe("getWord", () => {
     const result = getWord(list);
     expect(result.length).toEqual(5);
     expect(list.includes(result)).toBeTruthy();
+  });
+});
+
+describe("isValidGuess", () => {
+  it("returns false if word is not in word list", () => {
+    expect(isValidGuess("aaaaa")).toBeFalsy();
+  });
+
+  it("returns true if word is in word list", () => {
+    expect(isValidGuess("hello")).toBeTruthy();
   });
 });
 

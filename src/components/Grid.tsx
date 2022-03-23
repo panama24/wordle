@@ -1,19 +1,23 @@
 import styled from "styled-components";
 import { MAX_GUESSES, MAX_WORD_LENGTH } from "../constants";
-import { scoreWord, wordOfTheDay } from "../words/utils";
 
+export type BoardState = string[];
+export type Score = string[] | null[];
+export type Scores = Score[];
 type GridProps = {
-  state: string[];
+  scores: Scores;
+  state: BoardState;
 };
 
-function Grid({ state }: GridProps) {
+function Grid({ scores, state }: GridProps) {
+  const emptyRows = Array(MAX_GUESSES - state.length);
   return (
     <GridContainer data-testid="grid">
       {state.map((letters: string, i: number) => (
-        <GridRow letters={letters} key={i} />
+        <GridRow key={i} letters={letters} scores={scores[i]} />
       ))}
-      {Array(MAX_GUESSES - state.length).map((letters: string, i: number) => (
-        <GridRow letters={letters} key={i} />
+      {emptyRows.map((letters: string, i: number) => (
+        <GridRow key={i} letters={letters} scores={scores[i]} />
       ))}
     </GridContainer>
   );
@@ -21,44 +25,41 @@ function Grid({ state }: GridProps) {
 
 type GridRowProps = {
   letters: string;
+  scores: Score;
 };
 
-export function GridRow({ letters }: GridRowProps) {
-  const scores = scoreWord(letters, wordOfTheDay);
+export function GridRow({ letters, scores }: GridRowProps) {
+  const empties = Array(MAX_WORD_LENGTH - letters.length);
   return (
     <Row role="row">
       {letters.split("").map((char, i) => (
-        <Tile key={i} char={char} state={tileColor[scores[i]]} />
+        <Tile
+          key={i}
+          char={char}
+          state={scores[i] === null ? "tbd" : scores[i]}
+        />
       ))}
-      {Array(MAX_WORD_LENGTH - letters.length)
-        .fill(null)
-        .map((_, i) => (
-          <Tile key={i} state={"transparent"} />
-        ))}
+      {empties.fill(null).map((_, i) => (
+        <Tile key={i} state="empty" />
+      ))}
     </Row>
   );
 }
 
-const tileColor: Record<string, string> = {
-  correct: "#6aaa64",
-  present: "#c9b458",
-  absent: "#3a3a3c",
-};
-
 type TileProps = {
   char?: string;
-  state: string;
+  state: any;
 };
 
 export function Tile({ char, state }: TileProps) {
   return (
-    <TileContainer role="tile" state={state}>
+    <TileContainer role="tile" data-state={state}>
       {char}
     </TileContainer>
   );
 }
 
-const TileContainer = styled.div<{ state: string }>`
+const TileContainer = styled.div`
   width: 64px;
   height: 64px;
   color: white;
@@ -68,8 +69,26 @@ const TileContainer = styled.div<{ state: string }>`
   display: flex;
   justify-content: center;
   align-items: center;
-  background: ${({ state }) => state};
-  border: 2px solid #3a3a3c;
+  background: transparent;
+
+  &[data-state="empty"] {
+    border: 2px solid #3a3a3c;
+  }
+  &[data-state="tbd"] {
+    border: 2px solid #565758;
+  }
+  &[data-state="correct"] {
+    background: #6aaa64;
+    border: 2px solid #6aaa64;
+  }
+  &[data-state="present"] {
+    background: #c9b458;
+    border: 2px solid #c9b458;
+  }
+  &[data-state="absent"] {
+    background: #3a3a3c;
+    border: 2px solid #3a3a3c;
+  }
 `;
 
 const Row = styled.div`

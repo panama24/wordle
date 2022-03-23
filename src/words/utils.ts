@@ -6,6 +6,10 @@ export function getWord(wordList: string[]) {
   return wordList[Math.floor(Math.random() * wordList.length)];
 }
 
+export function isValidGuess(guess: string) {
+  return words.includes(guess);
+}
+
 export function scoreWord(guess: string, target: string): string[] {
   const scores = Array(target.length);
   const targetMap = mapLetterIndexes(target);
