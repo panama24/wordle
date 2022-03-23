@@ -94,13 +94,13 @@ const TileContainer = styled.div`
 const Row = styled.div`
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-gap: 9px;
+  grid-gap: 5px;
 `;
 
 const GridContainer = styled.div`
   display: grid;
   grid-template-rows: repeat(6, 1fr);
-  grid-gap: 9px;
+  grid-gap: 5px;
   padding: 5px;
   background: #121213;
   box-sizing: border-box;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import Grid, { BoardState, Scores } from "./components/Grid";
+import Keyboard from "./components/Keyboard";
 import Modal from "./components/Modal";
 import Toast from "./components/Toast";
 import { BACKSPACE, ENTER, MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
@@ -122,6 +123,7 @@ function App() {
       <GridLayout>
         <Grid state={boardState} scores={scores} />
       </GridLayout>
+      <Keyboard onCharKey={onCharKey} onDelete={onDelete} onEnter={onEnter} />
       <ToastLayout>
         {submissionErrors?.map((error, i) => (
           <Toast key={i} content={error} />
