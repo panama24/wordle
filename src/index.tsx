@@ -5,7 +5,7 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 
 const GlobalStyle = createGlobalStyle`
-  * {
+  body {
     background: #121213;
     font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
     font-size: 16px;

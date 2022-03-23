@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import styled from "styled-components";
 import Grid, { BoardState, Scores } from "./components/Grid";
+import Toast from "./components/Toast";
 import { MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
 import { isValidGuess, scoreWord, wordOfTheDay } from "./words/utils";
 
@@ -13,14 +15,17 @@ function App() {
   const [activeRow, setActiveRow] = useState<number>(0);
   const [boardState, setBoardState] = useState<BoardState>(initialBoardState);
   const [scores, setScores] = useState<Scores>(initialScores);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submissionErrors, setSubmissionErrors] = useState<
+    (string | undefined)[]
+  >([]);
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
       if (!event.metaKey) {
         if (event.key === "Enter") {
           if (boardState[activeRow].length < MAX_WORD_LENGTH) {
-            setSubmissionError("Not enough letters.");
+            setSubmissionErrors([...submissionErrors, "Not enough letters."]);
+            scheduleDismiss();
           } else {
             if (isValidGuess(boardState[activeRow])) {
               setScores([
@@ -30,7 +35,9 @@ function App() {
               ]);
               setActiveRow(activeRow + 1);
             } else {
-              setSubmissionError("Not in word list.");
+              console.log("setting submissionError");
+              setSubmissionErrors([...submissionErrors, "Not in word list."]);
+              scheduleDismiss();
             }
           }
         } else if (event.key === "Backspace") {
@@ -50,7 +57,7 @@ function App() {
         }
       }
     },
-    [activeRow, boardState, scores]
+    [activeRow, boardState, scores, submissionErrors]
   );
 
   useEffect(() => {
@@ -58,10 +65,34 @@ function App() {
     return () => document.removeEventListener("keydown", handleKeydown);
   }, [handleKeydown]);
 
+  const scheduleDismiss = () => {
+    setTimeout(() => {
+      setSubmissionErrors((errors) => [...errors.slice(1)]);
+    }, 2000);
+  };
+
   return (
-    <div style={{ display: "inline-block" }}>
-      <Grid state={boardState} scores={scores} />
-    </div>
+    <>
+      <GridLayout>
+        <Grid state={boardState} scores={scores} />
+      </GridLayout>
+      <ToastLayout>
+        {submissionErrors?.map((error, i) => (
+          <Toast key={i} content={error} />
+        ))}
+      </ToastLayout>
+    </>
   );
 }
+
+const GridLayout = styled.div`
+  display: inline-block;
+`;
+
+const ToastLayout = styled.div`
+  position: absolute;
+  top: 10%;
+  left: 50%;
+`;
+
 export default App;

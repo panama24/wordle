@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import Grid, { GridRow, Tile } from "./Grid";
 
-const scores = Array(6).map(() => Array(5).fill(null));
+const scores = [...Array(6)].map((_) => Array(5).fill(null));
 
 describe("Grid", () => {
   test("renders the correct number of rows", () => {
