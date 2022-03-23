@@ -5,7 +5,13 @@ import Keyboard from "./components/Keyboard";
 import Modal from "./components/Modal";
 import Toast from "./components/Toast";
 import { BACKSPACE, ENTER, MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
-import { hasWon, isValidGuess, scoreWord, wordOfTheDay } from "./words/utils";
+import {
+  hasWon,
+  isValidGuess,
+  mapKeyboardScores,
+  scoreWord,
+  wordOfTheDay,
+} from "./words/utils";
 
 const initialBoardState: BoardState = ["", "", "", "", "", ""];
 
@@ -30,6 +36,9 @@ function App() {
     (string | undefined)[]
   >([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [keyboardState, setKeyboardState] = useState<
+    Record<string, string | undefined>
+  >({});
 
   const onEnter = useCallback(() => {
     if (boardState[activeRow].length < MAX_WORD_LENGTH) {
@@ -43,6 +52,9 @@ function App() {
           score,
           ...scores.slice(activeRow + 1),
         ]);
+
+        const nextKeyboardState = mapKeyboardScores(boardState, wordOfTheDay);
+        setKeyboardState(nextKeyboardState);
 
         if (hasWon(score)) {
           setGameStatus(GameStatus.Win);
@@ -123,7 +135,12 @@ function App() {
       <GridLayout>
         <Grid state={boardState} scores={scores} />
       </GridLayout>
-      <Keyboard onCharKey={onCharKey} onDelete={onDelete} onEnter={onEnter} />
+      <Keyboard
+        onCharKey={onCharKey}
+        onDelete={onDelete}
+        onEnter={onEnter}
+        state={keyboardState}
+      />
       <ToastLayout>
         {submissionErrors?.map((error, i) => (
           <Toast key={i} content={error} />

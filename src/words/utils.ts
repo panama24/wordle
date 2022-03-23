@@ -1,4 +1,5 @@
 import { words } from "./wordList";
+import { BoardState } from "../components/Grid";
 
 export const wordOfTheDay = getWord(words);
 
@@ -68,4 +69,28 @@ export function mapLetterIndexes(word: string) {
       : map.set(splitWord[i], [Number(i)]);
   }
   return map;
+}
+
+export function mapKeyboardScores(guesses: BoardState, target: string) {
+  const mappedScores: Record<string, string | undefined> = {};
+  const splitTarget = target.split("");
+
+  guesses.forEach((guess) => {
+    const splitGuess = guess.split("");
+    splitGuess.forEach((char, i) => {
+      if (!splitTarget.includes(char)) {
+        return (mappedScores[char] = "absent");
+      }
+
+      if (splitTarget[i] === char) {
+        return (mappedScores[char] = "correct");
+      }
+
+      if (mappedScores[char] !== "correct") {
+        return (mappedScores[char] = "present");
+      }
+    });
+  });
+
+  return mappedScores;
 }

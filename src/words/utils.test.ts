@@ -1,4 +1,11 @@
-import { getWord, isValidGuess, mapLetterIndexes, scoreWord } from "./utils";
+import {
+  getWord,
+  isValidGuess,
+  mapKeyboardScores,
+  mapLetterIndexes,
+  scoreWord,
+  wordOfTheDay,
+} from "./utils";
 
 describe("getWord", () => {
   it("returns a word from the word list", () => {
@@ -16,6 +23,34 @@ describe("isValidGuess", () => {
 
   it("returns true if word is in word list", () => {
     expect(isValidGuess("hello")).toBeTruthy();
+  });
+});
+
+describe("mapKeyboardScores", () => {
+  it("returns a mapping of keyboard keys to scores", () => {
+    const scores = ["growl"];
+    const mappedScores = mapKeyboardScores(scores, "hello");
+    expect(mappedScores["g"]).toEqual("absent");
+    expect(mappedScores["r"]).toEqual("absent");
+    expect(mappedScores["o"]).toEqual("present");
+    expect(mappedScores["w"]).toEqual("absent");
+    expect(mappedScores["l"]).toEqual("present");
+    expect(mappedScores["b"]).toBeUndefined();
+  });
+
+  it("returns a mapping of keyboard keys to scores", () => {
+    const scores = ["growl", "melts", "hello"];
+    const mappedScores = mapKeyboardScores(scores, "hello");
+    expect(mappedScores["g"]).toEqual("absent");
+    expect(mappedScores["r"]).toEqual("absent");
+    expect(mappedScores["o"]).toEqual("correct");
+    expect(mappedScores["w"]).toEqual("absent");
+    expect(mappedScores["l"]).toEqual("correct");
+    expect(mappedScores["m"]).toEqual("absent");
+    expect(mappedScores["e"]).toEqual("correct");
+    expect(mappedScores["t"]).toEqual("absent");
+    expect(mappedScores["h"]).toEqual("correct");
+    expect(mappedScores["s"]).toEqual("absent");
   });
 });
 
