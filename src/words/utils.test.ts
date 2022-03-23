@@ -19,6 +19,17 @@ describe("mapLetterIndexes", () => {
 
 describe("scoreWord", () => {
   it("returns an array of score strings per letter", () => {
+    const result = scoreWord("hello", "fecal");
+    expect(result).toEqual([
+      "absent",
+      "correct",
+      "present",
+      "absent",
+      "absent",
+    ]);
+  });
+
+  it("returns an array of score strings per letter", () => {
     const result = scoreWord("hello", "below");
     expect(result.length).toEqual(5);
   });

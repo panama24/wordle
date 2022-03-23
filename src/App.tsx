@@ -1,7 +1,7 @@
 import Grid from "./components/Grid";
 
-// const boardState = ["hello", "hell", "hel", "he", "h", ""];
-const boardState = ["", "", "", "", "", ""];
+const boardState = ["hello", "found", "great", "focus", "cheer", "apple"];
+// const boardState = ["", "", "", "", "", ""];
 
 function App() {
   return (

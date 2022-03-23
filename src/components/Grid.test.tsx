@@ -23,7 +23,7 @@ describe("GridRow", () => {
 
 describe("Tile", () => {
   test("renders correctly when there is no character", () => {
-    const { queryByText } = render(<Tile />);
+    const { queryByText } = render(<Tile state="transparent" />);
     expect(queryByText("h")).toBeNull();
     expect(queryByText("r")).toBeNull();
     expect(queryByText("g")).toBeNull();
@@ -31,7 +31,7 @@ describe("Tile", () => {
   });
 
   test("renders correctly when there is a character", () => {
-    const { getByText } = render(<Tile char="h" />);
+    const { getByText } = render(<Tile char="h" state="transparent" />);
     expect(getByText("h")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { MAX_GUESSES, MAX_WORD_LENGTH } from "../constants";
+import { scoreWord, wordOfTheDay } from "../words/utils";
 
 type GridProps = {
   state: string[];
@@ -23,29 +24,41 @@ type GridRowProps = {
 };
 
 export function GridRow({ letters }: GridRowProps) {
+  const scores = scoreWord(letters, wordOfTheDay);
   return (
     <Row role="row">
       {letters.split("").map((char, i) => (
-        <Tile key={i} char={char} />
+        <Tile key={i} char={char} state={tileColor[scores[i]]} />
       ))}
       {Array(MAX_WORD_LENGTH - letters.length)
         .fill(null)
         .map((_, i) => (
-          <Tile key={i} />
+          <Tile key={i} state={"transparent"} />
         ))}
     </Row>
   );
 }
 
-type TileProps = {
-  char?: string;
+const tileColor: Record<string, string> = {
+  correct: "#6aaa64",
+  present: "#c9b458",
+  absent: "#3a3a3c",
 };
 
-export function Tile({ char }: TileProps) {
-  return <TileContainer role="tile">{char}</TileContainer>;
+type TileProps = {
+  char?: string;
+  state: string;
+};
+
+export function Tile({ char, state }: TileProps) {
+  return (
+    <TileContainer role="tile" state={state}>
+      {char}
+    </TileContainer>
+  );
 }
 
-const TileContainer = styled.div`
+const TileContainer = styled.div<{ state: string }>`
   width: 64px;
   height: 64px;
   color: white;
@@ -55,7 +68,7 @@ const TileContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
+  background: ${({ state }) => state};
   border: 2px solid #3a3a3c;
 `;
 

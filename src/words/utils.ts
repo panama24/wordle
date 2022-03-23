@@ -1,8 +1,12 @@
+import { words } from "./wordList";
+
+export const wordOfTheDay = getWord(words);
+
 export function getWord(wordList: string[]) {
   return wordList[Math.floor(Math.random() * wordList.length)];
 }
 
-export function scoreWord(guess: string, target: string) {
+export function scoreWord(guess: string, target: string): string[] {
   const scores = Array(target.length);
   const targetMap = mapLetterIndexes(target);
   const guessMap = mapLetterIndexes(guess);
@@ -11,12 +15,13 @@ export function scoreWord(guess: string, target: string) {
   const guessKeys = Array.from(guessMap.keys());
   for (const char of guessKeys) {
     const guessIndexes = guessMap.get(char);
+
     if (!targetMap.get(char)) {
       guessIndexes.forEach((i: number) => (scores[i] = "absent"));
       continue;
     }
-    const targetIndexes = targetMap.get(char);
 
+    const targetIndexes = targetMap.get(char);
     const present = new Map();
     for (let i = guessIndexes.length - 1; i >= 0; i--) {
       const guessIndex = guessIndexes[i];
@@ -30,8 +35,14 @@ export function scoreWord(guess: string, target: string) {
         if (seen.has(char)) {
           scores[guessIndex] = "absent";
         } else {
-          present.set(char, guessIndex);
-          scores[guessIndex] = "present";
+          if (present.has(char)) {
+            scores[guessIndex] = "present";
+            scores[present.get(char)] = "absent";
+            present.set(char, guessIndex);
+          } else {
+            present.set(char, guessIndex);
+            scores[guessIndex] = "present";
+          }
         }
       }
     }
