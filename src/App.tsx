@@ -127,11 +127,23 @@ function App() {
           <Toast key={i} content={error} />
         ))}
       </ToastLayout>
-      <Modal
-        content={"i am content"}
-        close={() => setIsModalOpen(false)}
-        isOpen={isModalOpen}
-      />
+      <Modal close={() => setIsModalOpen(false)} isOpen={isModalOpen}>
+        <div>STATISTICS</div>
+        <div style={{ display: "flex" }}>
+          <div>Played</div>
+          <div>Win %</div>
+          <div>Current Streak</div>
+          <div>Max Streak</div>
+        </div>
+        <div>GUESS DISTRIBUTION</div>
+        <div>BAR CHART</div>
+        <div>NEXT WORDLE</div>
+        <div style={{ display: "flex" }}>
+          <div>HH:MM:SS</div>
+          <div>|</div>
+          <div>Share</div>
+        </div>
+      </Modal>
     </>
   );
 }

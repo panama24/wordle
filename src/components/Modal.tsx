@@ -1,33 +1,17 @@
 import styled from "styled-components";
 
 type ModalProps = {
-  content: any;
+  children: any;
   close: () => void;
   isOpen: boolean;
 };
 
-function Modal({ content, close, isOpen }: ModalProps) {
+function Modal({ children, close, isOpen }: ModalProps) {
   return (
     <Overlay visible={isOpen}>
       <Container>
         <span onClick={close}>X</span>
-        <Content>
-          <div>STATISTICS</div>
-          <div style={{ display: "flex" }}>
-            <div>Played</div>
-            <div>Win %</div>
-            <div>Current Streak</div>
-            <div>Max Streak</div>
-          </div>
-          <div>GUESS DISTRIBUTION</div>
-          <div>BAR CHART</div>
-          <div>NEXT WORDLE</div>
-          <div style={{ display: "flex" }}>
-            <div>HH:MM:SS</div>
-            <div>|</div>
-            <div>Share</div>
-          </div>
-        </Content>
+        <Content>{children}</Content>
       </Container>
     </Overlay>
   );
