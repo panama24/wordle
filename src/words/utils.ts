@@ -10,6 +10,10 @@ export function isValidGuess(guess: string) {
   return words.includes(guess);
 }
 
+export function hasWon(score: string[]) {
+  return score.every((s) => s === "correct");
+}
+
 export function scoreWord(guess: string, target: string): string[] {
   const scores = Array(target.length);
   const targetMap = mapLetterIndexes(target);

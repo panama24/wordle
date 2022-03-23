@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import Grid, { BoardState, Scores } from "./components/Grid";
+import Modal from "./components/Modal";
 import Toast from "./components/Toast";
 import { MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
-import { isValidGuess, scoreWord, wordOfTheDay } from "./words/utils";
+import { hasWon, isValidGuess, scoreWord, wordOfTheDay } from "./words/utils";
 
 const initialBoardState: BoardState = ["", "", "", "", "", ""];
 
@@ -11,16 +12,28 @@ const initialScores: Scores = [...Array(MAX_GUESSES)].map((_) =>
   Array(MAX_WORD_LENGTH).fill(null)
 );
 
+enum GameStatus {
+  InProgress,
+  Win,
+  Lose,
+}
+
 function App() {
   const [activeRow, setActiveRow] = useState<number>(0);
   const [boardState, setBoardState] = useState<BoardState>(initialBoardState);
   const [scores, setScores] = useState<Scores>(initialScores);
+  const [gameStatus, setGameStatus] = useState<GameStatus>(
+    GameStatus.InProgress
+  );
   const [submissionErrors, setSubmissionErrors] = useState<
     (string | undefined)[]
   >([]);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
+      if (gameStatus !== GameStatus.InProgress) return;
+
       if (!event.metaKey) {
         if (event.key === "Enter") {
           if (boardState[activeRow].length < MAX_WORD_LENGTH) {
@@ -28,14 +41,26 @@ function App() {
             scheduleDismiss();
           } else {
             if (isValidGuess(boardState[activeRow])) {
+              const score = scoreWord(boardState[activeRow], wordOfTheDay);
               setScores([
                 ...scores.slice(0, activeRow),
-                scoreWord(boardState[activeRow], wordOfTheDay),
+                score,
                 ...scores.slice(activeRow + 1),
               ]);
-              setActiveRow(activeRow + 1);
+
+              if (hasWon(score)) {
+                setGameStatus(GameStatus.Win);
+                return;
+              }
+
+              const nextRow = activeRow + 1;
+              if (nextRow > MAX_GUESSES - 1) {
+                setGameStatus(GameStatus.Lose);
+                return;
+              } else {
+                setActiveRow(nextRow);
+              }
             } else {
-              console.log("setting submissionError");
               setSubmissionErrors([...submissionErrors, "Not in word list."]);
               scheduleDismiss();
             }
@@ -57,13 +82,19 @@ function App() {
         }
       }
     },
-    [activeRow, boardState, scores, submissionErrors]
+    [activeRow, boardState, gameStatus, scores, submissionErrors]
   );
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeydown);
     return () => document.removeEventListener("keydown", handleKeydown);
   }, [handleKeydown]);
+
+  useEffect(() => {
+    if (gameStatus !== GameStatus.InProgress) {
+      setIsModalOpen(true);
+    }
+  }, [gameStatus]);
 
   const scheduleDismiss = () => {
     setTimeout(() => {
@@ -81,6 +112,11 @@ function App() {
           <Toast key={i} content={error} />
         ))}
       </ToastLayout>
+      <Modal
+        content={"i am content"}
+        close={() => setIsModalOpen(false)}
+        isOpen={isModalOpen}
+      />
     </>
   );
 }
