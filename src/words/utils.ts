@@ -1,6 +1,16 @@
 import { words } from "./wordList";
 import { BoardState } from "../components/Grid";
 
+const wordsForWinners = [
+  "Fabulous",
+  "Wonderful",
+  "Amazing",
+  "Splendid",
+  "Fantastic",
+];
+
+export const wordForTheWinner = getWord(wordsForWinners);
+
 export const wordOfTheDay = getWord(words);
 
 export function getWord(wordList: string[]) {

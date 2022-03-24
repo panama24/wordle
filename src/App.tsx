@@ -10,6 +10,7 @@ import {
   isValidGuess,
   mapKeyboardScores,
   scoreWord,
+  wordForTheWinner,
   wordOfTheDay,
 } from "./words/utils";
 
@@ -35,6 +36,7 @@ function App() {
   const [submissionErrors, setSubmissionErrors] = useState<
     (string | undefined)[]
   >([]);
+  const [gameOverMsg, setGameOverMsg] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [keyboardState, setKeyboardState] = useState<
     Record<string, string | undefined>
@@ -58,12 +60,16 @@ function App() {
 
         if (hasWon(score)) {
           setGameStatus(GameStatus.Win);
+          setGameOverMsg(wordForTheWinner);
+          scheduleDismiss();
           return;
         }
 
         const nextRow = activeRow + 1;
         if (nextRow > MAX_GUESSES - 1) {
           setGameStatus(GameStatus.Lose);
+          setGameOverMsg(wordOfTheDay);
+          scheduleDismiss();
           return;
         } else {
           setActiveRow(nextRow);
@@ -120,16 +126,20 @@ function App() {
 
   useEffect(() => {
     if (gameStatus !== GameStatus.InProgress) {
-      setIsModalOpen(true);
+      setTimeout(() => {
+        setIsModalOpen(true);
+      }, 2100);
     }
   }, [gameStatus]);
 
   const scheduleDismiss = () => {
     setTimeout(() => {
       setSubmissionErrors((errors) => [...errors.slice(1)]);
+      setGameOverMsg(null);
     }, 2000);
   };
 
+  console.log(wordOfTheDay);
   return (
     <>
       <GridLayout>
@@ -142,6 +152,7 @@ function App() {
         state={keyboardState}
       />
       <ToastLayout>
+        {gameOverMsg && <Toast content={gameOverMsg} />}
         {submissionErrors?.map((error, i) => (
           <Toast key={i} content={error} />
         ))}
