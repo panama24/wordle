@@ -1971,6 +1971,8 @@ const words = [
   "plate",
   "plays",
   "plaza",
+  "plead",
+  "pleas",
   "plots",
   "plugs",
   "poems",

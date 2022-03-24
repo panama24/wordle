@@ -131,11 +131,22 @@ export function calculateWinPercentage(
   return Math.round((wins / plays) * 100);
 }
 
+type Streaks = {
+  currentStreak: number;
+  maxStreak: number;
+};
+
 export function calculateStreaks(
   current: number,
   max: number,
-  lastCompletedTs: number
-): Record<string, number> {
+  lastCompletedTs?: number
+): Streaks {
+  if (!lastCompletedTs)
+    return {
+      currentStreak: 1,
+      maxStreak: 1,
+    };
+
   const diffInHours = Math.round(
     (new Date().valueOf() - lastCompletedTs) / 60000 / 60 / 24
   );
@@ -188,14 +199,6 @@ export function calculateGamesWon(
   return count;
 }
 
-// on game over, we calculate statistics
-// increment games played
-// increment win percentage accordingly
-// calculate current and max streaks before resetting last completed timestamp
-// set last completed timestamp
-// calculate guess distribution
-// for UI - modal
-
 export function getGuessNumber(boardState: BoardState) {
   return boardState.reduce((acc, curr) => {
     if (curr !== "") acc += 1;
@@ -203,10 +206,20 @@ export function getGuessNumber(boardState: BoardState) {
   }, 0);
 }
 
+export function defaultStats() {
+  return {
+    currentStreak: 0,
+    maxStreak: 0,
+    played: 0,
+    winPercentage: 0,
+    guessDistribution: defaultGuessDistribution(),
+  };
+}
+
 export function calculateStatistics(
-  prevStats: Statistics,
-  gameState: GameState
-): Record<string, any> {
+  gameState: GameState,
+  prevStats: Statistics = defaultStats()
+): Statistics {
   const { boardState, lastCompletedTs, status } = gameState;
   const { currentStreak, guessDistribution, maxStreak, played } = prevStats;
 

@@ -8,12 +8,18 @@ import {
   BACKSPACE,
   BoardState,
   ENTER,
+  GameState,
   GameStatus,
+  LOCAL_STORAGE_STATE_KEY,
+  LOCAL_STORAGE_STATS_KEY,
   MAX_GUESSES,
   MAX_WORD_LENGTH,
   Scores,
+  Statistics,
 } from "./constants";
 import {
+  calculateStatistics,
+  defaultGuessDistribution,
   hasWon,
   initialBoardState,
   initialScores,
@@ -47,23 +53,34 @@ function App() {
     } else {
       if (isValidGuess(boardState[activeRow])) {
         const score = scoreWord(boardState[activeRow], wordOfTheDay);
-        setScores([
+        const nextScores = [
           ...scores.slice(0, activeRow),
           score,
           ...scores.slice(activeRow + 1),
-        ]);
+        ];
+        setScores(nextScores);
 
         const nextKeyboardState = mapKeyboardScores(boardState, wordOfTheDay);
         setKeyboardState(nextKeyboardState);
 
-        if (hasWon(score)) {
-          setGameStatus(GameStatus.Win);
-          setGameOverMsg(wordForTheWinner);
-          scheduleDismiss();
-          return;
-        }
-
         const nextRow = activeRow + 1;
+
+        let lastCompletedTs = 0;
+        const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+        if (stateFromStorage) {
+          lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
+        }
+        localStorage.setItem(
+          LOCAL_STORAGE_STATE_KEY,
+          JSON.stringify({
+            activeRow: nextRow,
+            boardState,
+            lastCompletedTs,
+            status: gameStatus,
+            scores: nextScores,
+          })
+        );
+
         if (nextRow > MAX_GUESSES - 1) {
           setGameStatus(GameStatus.Lose);
           setGameOverMsg(wordOfTheDay);
@@ -71,6 +88,13 @@ function App() {
           return;
         } else {
           setActiveRow(nextRow);
+        }
+
+        if (hasWon(score)) {
+          setGameStatus(GameStatus.Win);
+          setGameOverMsg(wordForTheWinner);
+          scheduleDismiss();
+          return;
         }
       } else {
         setSubmissionErrors([...submissionErrors, "Not in word list."]);
@@ -124,11 +148,50 @@ function App() {
 
   useEffect(() => {
     if (gameStatus !== GameStatus.InProgress) {
+      let lastCompletedTs = 0;
+      const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+      if (stateFromStorage) {
+        lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
+      }
+      const gameState: GameState = {
+        activeRow,
+        boardState,
+        lastCompletedTs,
+        status: gameStatus,
+        scores,
+      };
+
+      let statistics: Statistics = {
+        currentStreak: 0,
+        maxStreak: 0,
+        played: 0,
+        winPercentage: 0,
+        guessDistribution: defaultGuessDistribution(),
+      };
+      const statsFromStorage = localStorage.getItem(LOCAL_STORAGE_STATS_KEY);
+      if (statsFromStorage) {
+        statistics = JSON.parse(statsFromStorage);
+      }
+
+      localStorage.setItem(
+        LOCAL_STORAGE_STATS_KEY,
+        JSON.stringify(calculateStatistics(gameState, statistics))
+      );
+
+      const nextGameState = {
+        ...gameState,
+        lastCompletedTs: new Date().valueOf(),
+      };
+      localStorage.setItem(
+        LOCAL_STORAGE_STATE_KEY,
+        JSON.stringify(nextGameState)
+      );
+
       setTimeout(() => {
         setIsModalOpen(true);
       }, 2100);
     }
-  }, [gameStatus]);
+  }, [activeRow, boardState, gameStatus, scores]);
 
   const scheduleDismiss = () => {
     setTimeout(() => {
@@ -155,6 +218,8 @@ function App() {
           <Toast key={i} content={error} />
         ))}
       </ToastLayout>
+
+      {/* modalContent as renderProp?? */}
       <Modal close={() => setIsModalOpen(false)} isOpen={isModalOpen}>
         <div>STATISTICS</div>
         <div style={{ display: "flex" }}>

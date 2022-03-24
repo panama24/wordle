@@ -68,13 +68,14 @@ describe("calculateStatistics", () => {
     boardState = ["hello", "share", ...boardState];
 
     const gameState = {
+      activeRow: 2,
       boardState,
       lastCompletedTs: new Date().valueOf(),
       scores,
       status: GameStatus.Win,
     };
 
-    expect(calculateStatistics(stats, gameState)).toEqual({
+    expect(calculateStatistics(gameState, stats)).toEqual({
       currentStreak: 1,
       maxStreak: 1,
       played: 1,
@@ -95,13 +96,14 @@ describe("calculateStatistics", () => {
     boardState = ["hello", "share", "fails", "shoot", "feels", "wrong"];
 
     const gameState = {
+      activeRow: 5,
       boardState,
       lastCompletedTs: new Date().valueOf(),
       scores,
       status: GameStatus.Lose,
     };
 
-    expect(calculateStatistics(stats, gameState)).toEqual({
+    expect(calculateStatistics(gameState, stats)).toEqual({
       currentStreak: 1,
       maxStreak: 1,
       played: 1,
@@ -122,13 +124,14 @@ describe("calculateStatistics", () => {
     boardState = ["hello", "share", "fails", "shoot", "feels", "wrong"];
 
     const gameState = {
+      activeRow: 5,
       boardState,
       lastCompletedTs: new Date().valueOf(),
       scores,
       status: GameStatus.Win,
     };
 
-    expect(calculateStatistics(stats, gameState)).toEqual({
+    expect(calculateStatistics(gameState, stats)).toEqual({
       currentStreak: 1,
       maxStreak: 1,
       played: 1,
