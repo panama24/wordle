@@ -37,6 +37,7 @@ function App() {
   const [gameStatus, setGameStatus] = useState<GameStatus>(
     GameStatus.InProgress
   );
+  const [statistics, setStatistics] = useState<Statistics>();
   const [submissionErrors, setSubmissionErrors] = useState<
     (string | undefined)[]
   >([]);
@@ -45,6 +46,46 @@ function App() {
   const [keyboardState, setKeyboardState] = useState<
     Record<string, string | undefined>
   >({});
+
+  const persistStats = useCallback(() => {
+    let lastCompletedTs = 0;
+    const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+    if (stateFromStorage) {
+      lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
+    }
+    const gameState: GameState = {
+      activeRow,
+      boardState,
+      lastCompletedTs,
+      status: gameStatus,
+      scores,
+    };
+
+    let stats: Statistics = {
+      currentStreak: 0,
+      maxStreak: 0,
+      played: 0,
+      winPercentage: 0,
+      guessDistribution: defaultGuessDistribution(),
+    };
+    const statsFromStorage = localStorage.getItem(LOCAL_STORAGE_STATS_KEY);
+    if (statsFromStorage) {
+      stats = JSON.parse(statsFromStorage);
+    }
+
+    const nextStats = calculateStatistics(gameState, stats);
+    setStatistics(nextStats);
+    localStorage.setItem(LOCAL_STORAGE_STATS_KEY, JSON.stringify(nextStats));
+
+    const nextGameState = {
+      ...gameState,
+      lastCompletedTs: new Date().valueOf(),
+    };
+    localStorage.setItem(
+      LOCAL_STORAGE_STATE_KEY,
+      JSON.stringify(nextGameState)
+    );
+  }, [activeRow, boardState, gameStatus, scores]);
 
   const onEnter = useCallback(() => {
     if (boardState[activeRow].length < MAX_WORD_LENGTH) {
@@ -94,6 +135,7 @@ function App() {
           setGameStatus(GameStatus.Win);
           setGameOverMsg(wordForTheWinner);
           scheduleDismiss();
+          persistStats();
           return;
         }
       } else {
@@ -101,7 +143,14 @@ function App() {
         scheduleDismiss();
       }
     }
-  }, [activeRow, boardState, scores, submissionErrors]);
+  }, [
+    activeRow,
+    boardState,
+    gameStatus,
+    persistStats,
+    scores,
+    submissionErrors,
+  ]);
 
   const onDelete = useCallback(() => {
     setBoardState([
@@ -148,50 +197,11 @@ function App() {
 
   useEffect(() => {
     if (gameStatus !== GameStatus.InProgress) {
-      let lastCompletedTs = 0;
-      const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
-      if (stateFromStorage) {
-        lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
-      }
-      const gameState: GameState = {
-        activeRow,
-        boardState,
-        lastCompletedTs,
-        status: gameStatus,
-        scores,
-      };
-
-      let statistics: Statistics = {
-        currentStreak: 0,
-        maxStreak: 0,
-        played: 0,
-        winPercentage: 0,
-        guessDistribution: defaultGuessDistribution(),
-      };
-      const statsFromStorage = localStorage.getItem(LOCAL_STORAGE_STATS_KEY);
-      if (statsFromStorage) {
-        statistics = JSON.parse(statsFromStorage);
-      }
-
-      localStorage.setItem(
-        LOCAL_STORAGE_STATS_KEY,
-        JSON.stringify(calculateStatistics(gameState, statistics))
-      );
-
-      const nextGameState = {
-        ...gameState,
-        lastCompletedTs: new Date().valueOf(),
-      };
-      localStorage.setItem(
-        LOCAL_STORAGE_STATE_KEY,
-        JSON.stringify(nextGameState)
-      );
-
       setTimeout(() => {
         setIsModalOpen(true);
       }, 2100);
     }
-  }, [activeRow, boardState, gameStatus, scores]);
+  }, [gameStatus]);
 
   const scheduleDismiss = () => {
     setTimeout(() => {
@@ -206,12 +216,14 @@ function App() {
       <GridLayout>
         <Grid state={boardState} scores={scores} />
       </GridLayout>
+
       <Keyboard
         onCharKey={onCharKey}
         onDelete={onDelete}
         onEnter={onEnter}
         state={keyboardState}
       />
+
       <ToastLayout>
         {gameOverMsg && <Toast content={gameOverMsg} />}
         {submissionErrors?.map((error, i) => (
@@ -219,24 +231,35 @@ function App() {
         ))}
       </ToastLayout>
 
-      {/* modalContent as renderProp?? */}
       <Modal close={() => setIsModalOpen(false)} isOpen={isModalOpen}>
-        <div>STATISTICS</div>
-        <div style={{ display: "flex" }}>
-          <div>Played</div>
-          <div>Win %</div>
-          <div>Current Streak</div>
-          <div>Max Streak</div>
-        </div>
-        <div>GUESS DISTRIBUTION</div>
-        <div>BAR CHART</div>
-        <div>NEXT WORDLE</div>
-        <div style={{ display: "flex" }}>
-          <div>HH:MM:SS</div>
-          <div>|</div>
-          <div>Share</div>
-        </div>
+        {statistics && <Stats statistics={statistics} />}
       </Modal>
+    </>
+  );
+}
+
+type StatsProps = {
+  statistics: Statistics;
+};
+
+function Stats({ statistics }: StatsProps) {
+  return (
+    <>
+      <div>STATISTICS</div>
+      <div style={{ display: "flex" }}>
+        <div>Played {statistics.played}</div>
+        <div>Win % {statistics.winPercentage}</div>
+        <div>Current Streak: {statistics.currentStreak}</div>
+        <div>Max Streak {statistics.maxStreak}</div>
+      </div>
+      <div>GUESS DISTRIBUTION</div>
+      <div>BAR CHART</div>
+      <div>NEXT WORDLE</div>
+      <div style={{ display: "flex" }}>
+        <div>HH:MM:SS</div>
+        <div>|</div>
+        <div>Share</div>
+      </div>
     </>
   );
 }
