@@ -1,5 +1,14 @@
 import { words } from "./wordList";
-import { BoardState } from "../components/Grid";
+import {
+  BoardState,
+  GameState,
+  GameStatus,
+  GuessDistribution,
+  MAX_GUESSES,
+  MAX_WORD_LENGTH,
+  Scores,
+  Statistics,
+} from "../constants";
 
 const wordsForWinners = [
   "Fabulous",
@@ -16,6 +25,11 @@ export const wordOfTheDay = getWord(words);
 export function getWord(wordList: string[]) {
   return wordList[Math.floor(Math.random() * wordList.length)];
 }
+
+export const initialBoardState = (): BoardState => ["", "", "", "", "", ""];
+
+export const initialScores = (): Scores =>
+  [...Array(MAX_GUESSES)].map((_) => Array(MAX_WORD_LENGTH).fill(null));
 
 export function isValidGuess(guess: string) {
   return words.includes(guess);
@@ -103,4 +117,113 @@ export function mapKeyboardScores(guesses: BoardState, target: string) {
   });
 
   return mappedScores;
+}
+
+export function incrementGamesPlayed(prevPlays: number = 0): number {
+  return prevPlays + 1;
+}
+
+export function calculateWinPercentage(
+  plays: number = 0,
+  wins: number = 0
+): number {
+  if (plays === 0 && wins === 0) return 0;
+  return Math.round((wins / plays) * 100);
+}
+
+export function calculateStreaks(
+  current: number,
+  max: number,
+  lastCompletedTs: number
+): Record<string, number> {
+  const diffInHours = Math.round(
+    (new Date().valueOf() - lastCompletedTs) / 60000 / 60 / 24
+  );
+  const nextCurrent = diffInHours > 24 ? 0 : current + 1;
+  const nextMax = nextCurrent > max ? nextCurrent : max;
+
+  return {
+    currentStreak: nextCurrent,
+    maxStreak: nextMax,
+  };
+}
+
+export const defaultGuessDistribution = () => ({
+  1: 0,
+  2: 0,
+  3: 0,
+  4: 0,
+  5: 0,
+  6: 0,
+  fail: 0,
+});
+
+export function mapGuessDistribution(
+  status: number,
+  guessNumber: number,
+  previousDistribution: GuessDistribution = defaultGuessDistribution()
+): GuessDistribution {
+  if (status === GameStatus.Lose) {
+    return {
+      ...previousDistribution,
+      fail: previousDistribution.fail + 1,
+    };
+  } else {
+    return {
+      ...previousDistribution,
+      [guessNumber]: previousDistribution[guessNumber] + 1,
+    };
+  }
+}
+
+export function calculateGamesWon(
+  guessDistribution: GuessDistribution
+): number {
+  let count = 0;
+  for (const key in guessDistribution) {
+    if (!isNaN(Number(key))) {
+      count += guessDistribution[key];
+    }
+  }
+  return count;
+}
+
+// on game over, we calculate statistics
+// increment games played
+// increment win percentage accordingly
+// calculate current and max streaks before resetting last completed timestamp
+// set last completed timestamp
+// calculate guess distribution
+// for UI - modal
+
+export function getGuessNumber(boardState: BoardState) {
+  return boardState.reduce((acc, curr) => {
+    if (curr !== "") acc += 1;
+    return acc;
+  }, 0);
+}
+
+export function calculateStatistics(
+  prevStats: Statistics,
+  gameState: GameState
+): Record<string, any> {
+  const { boardState, lastCompletedTs, status } = gameState;
+  const { currentStreak, guessDistribution, maxStreak, played } = prevStats;
+
+  const streaks = calculateStreaks(currentStreak, maxStreak, lastCompletedTs);
+  const dist = mapGuessDistribution(
+    status,
+    getGuessNumber(boardState),
+    guessDistribution
+  );
+  const plays = incrementGamesPlayed(played);
+  const wins = calculateGamesWon(dist);
+  const winPercentage = calculateWinPercentage(plays, wins);
+
+  return {
+    ...streaks,
+    played: plays,
+    winPercentage,
+    guessDistribution: dist,
+  };
 }

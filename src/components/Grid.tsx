@@ -1,9 +1,12 @@
 import styled from "styled-components";
-import { MAX_GUESSES, MAX_WORD_LENGTH } from "../constants";
+import {
+  BoardState,
+  MAX_GUESSES,
+  MAX_WORD_LENGTH,
+  Score,
+  Scores,
+} from "../constants";
 
-export type BoardState = string[];
-export type Score = string[] | null[];
-export type Scores = Score[];
 type GridProps = {
   scores: Scores;
   state: BoardState;

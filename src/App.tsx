@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import Grid, { BoardState, Scores } from "./components/Grid";
+import Grid from "./components/Grid";
 import Keyboard from "./components/Keyboard";
 import Modal from "./components/Modal";
 import Toast from "./components/Toast";
-import { BACKSPACE, ENTER, MAX_GUESSES, MAX_WORD_LENGTH } from "./constants";
+import {
+  BACKSPACE,
+  BoardState,
+  ENTER,
+  GameStatus,
+  MAX_GUESSES,
+  MAX_WORD_LENGTH,
+  Scores,
+} from "./constants";
 import {
   hasWon,
+  initialBoardState,
+  initialScores,
   isValidGuess,
   mapKeyboardScores,
   scoreWord,
@@ -14,22 +24,10 @@ import {
   wordOfTheDay,
 } from "./words/utils";
 
-const initialBoardState: BoardState = ["", "", "", "", "", ""];
-
-const initialScores: Scores = [...Array(MAX_GUESSES)].map((_) =>
-  Array(MAX_WORD_LENGTH).fill(null)
-);
-
-enum GameStatus {
-  InProgress,
-  Win,
-  Lose,
-}
-
 function App() {
   const [activeRow, setActiveRow] = useState<number>(0);
-  const [boardState, setBoardState] = useState<BoardState>(initialBoardState);
-  const [scores, setScores] = useState<Scores>(initialScores);
+  const [boardState, setBoardState] = useState<BoardState>(initialBoardState());
+  const [scores, setScores] = useState<Scores>(initialScores());
   const [gameStatus, setGameStatus] = useState<GameStatus>(
     GameStatus.InProgress
   );
