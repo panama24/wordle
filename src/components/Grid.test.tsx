@@ -6,9 +6,8 @@ const scores = [...Array(6)].map((_) => Array(5).fill(null));
 describe("Grid", () => {
   test("renders the correct number of rows", () => {
     const boardState = ["", "", "", "", "", ""];
-    const { queryAllByRole } = render(
-      <Grid state={boardState} scores={scores} />
-    );
+    const state = { gameState: { boardState, scores } };
+    const { queryAllByRole } = render(<Grid state={state} />);
     expect(queryAllByRole("row")).toHaveLength(6);
   });
 });

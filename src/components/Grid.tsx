@@ -1,22 +1,18 @@
 import styled from "styled-components";
-import {
-  BoardState,
-  MAX_GUESSES,
-  MAX_WORD_LENGTH,
-  Score,
-  Scores,
-} from "../constants";
+import { GameState, MAX_GUESSES, MAX_WORD_LENGTH, Score } from "../constants";
 
 type GridProps = {
-  scores: Scores;
-  state: BoardState;
+  state: any;
 };
 
-function Grid({ scores, state }: GridProps) {
-  const emptyRows = Array(MAX_GUESSES - state.length);
+function Grid({ state }: GridProps) {
+  const {
+    gameState: { boardState, scores },
+  } = state;
+  const emptyRows = Array(MAX_GUESSES - boardState.length);
   return (
     <GridContainer data-testid="grid">
-      {state.map((letters: string, i: number) => (
+      {boardState.map((letters: string, i: number) => (
         <GridRow key={i} letters={letters} scores={scores[i]} />
       ))}
       {emptyRows.map((letters: string, i: number) => (

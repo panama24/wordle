@@ -34,3 +34,10 @@ export type GameState = {
   status: GameStatus;
   scores: Scores;
 };
+
+// need a way to reset the resettable game state: activeRow, boardState, scores, gameStatus
+// maintain the lastCompletedTs
+// two reducers: game, stats
+// game state saved to localStorage on enter and/or game over, reset (every 24 hours?)
+// stats saved to localStorage only when game over
+// merge state on load with localStorage

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import styled from "styled-components";
 import Grid from "./components/Grid";
 import Keyboard from "./components/Keyboard";
@@ -18,6 +18,20 @@ import {
   Statistics,
 } from "./constants";
 import {
+  ADD_CHAR,
+  DELETE_CHAR,
+  INCREMENT_ROW,
+  SET_GAME_STATUS,
+  UPDATE_SCORES,
+} from "./reducers/gameStateReducer";
+import {
+  REMOVE_GAME_OVER,
+  REMOVE_SUBMISSION_ERROR,
+  SET_GAME_OVER,
+  SET_SUBMISSION_ERROR,
+} from "./reducers/messagesReducer";
+import { rootReducer } from "./reducers/rootReducer";
+import {
   calculateStatistics,
   defaultGuessDistribution,
   hasWon,
@@ -30,152 +44,188 @@ import {
   wordOfTheDay,
 } from "./words/utils";
 
+function tryReadLocalStorage() {
+  let persistedState: any = {};
+  try {
+    const storedState = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+    if (storedState) {
+      persistedState = JSON.parse(storedState);
+    }
+  } catch (error) {}
+  return { ...initialState, ...persistedState };
+}
+
+const initialState = {
+  gameState: {
+    activeRow: 0,
+    boardState: initialBoardState(),
+    lastCompletedTs: 0,
+    status: GameStatus.InProgress,
+    scores: initialScores(),
+  },
+  messages: {
+    submissionErrors: [],
+    gameOverMsg: null,
+  },
+  statistics: {
+    currentStreak: 0,
+    maxStreak: 0,
+    played: 0,
+    winPercentage: 0,
+    guessDistribution: defaultGuessDistribution(),
+  },
+};
+
 function App() {
-  const [activeRow, setActiveRow] = useState<number>(0);
-  const [boardState, setBoardState] = useState<BoardState>(initialBoardState());
-  const [scores, setScores] = useState<Scores>(initialScores());
-  const [gameStatus, setGameStatus] = useState<GameStatus>(
-    GameStatus.InProgress
+  const [state, dispatch] = useReducer(
+    rootReducer,
+    initialState,
+    tryReadLocalStorage
   );
-  const [statistics, setStatistics] = useState<Statistics>();
-  const [submissionErrors, setSubmissionErrors] = useState<
-    (string | undefined)[]
-  >([]);
-  const [gameOverMsg, setGameOverMsg] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [keyboardState, setKeyboardState] = useState<
     Record<string, string | undefined>
   >({});
+  console.log("state", state);
 
-  const persistStats = useCallback(() => {
-    let lastCompletedTs = 0;
-    const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
-    if (stateFromStorage) {
-      lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
-    }
-    const gameState: GameState = {
-      activeRow,
-      boardState,
-      lastCompletedTs,
-      status: gameStatus,
-      scores,
-    };
+  // called onEnter when gameStatus = WIN
+  // const persistStats = useCallback(() => {
+  //   // will this ever really not be set? -> win on first try?
+  //   let lastCompletedTs = 0;
+  //   const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+  //   if (stateFromStorage) {
+  //     lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
+  //   }
+  //   // with useReducer --> state.gameState;
+  //   const gameState: GameState = {
+  //     activeRow,
+  //     boardState,
+  //     // how do we handle this?
+  //     lastCompletedTs,
+  //     status: gameStatus,
+  //     scores,
+  //   };
 
-    let stats: Statistics = {
-      currentStreak: 0,
-      maxStreak: 0,
-      played: 0,
-      winPercentage: 0,
-      guessDistribution: defaultGuessDistribution(),
-    };
-    const statsFromStorage = localStorage.getItem(LOCAL_STORAGE_STATS_KEY);
-    if (statsFromStorage) {
-      stats = JSON.parse(statsFromStorage);
-    }
+  //   let stats: Statistics = {
+  //     currentStreak: 0,
+  //     maxStreak: 0,
+  //     played: 0,
+  //     winPercentage: 0,
+  //     guessDistribution: defaultGuessDistribution(),
+  //   };
+  //   const statsFromStorage = localStorage.getItem(LOCAL_STORAGE_STATS_KEY);
+  //   if (statsFromStorage) {
+  //     stats = JSON.parse(statsFromStorage);
+  //   }
 
-    const nextStats = calculateStatistics(gameState, stats);
-    setStatistics(nextStats);
-    localStorage.setItem(LOCAL_STORAGE_STATS_KEY, JSON.stringify(nextStats));
+  //   const nextStats = calculateStatistics(gameState, stats);
+  //   // dispatch({ type: SET_STATISTICS, payload: nextStats })
+  //   setStatistics(nextStats);
 
-    const nextGameState = {
-      ...gameState,
-      lastCompletedTs: new Date().valueOf(),
-    };
-    localStorage.setItem(
-      LOCAL_STORAGE_STATE_KEY,
-      JSON.stringify(nextGameState)
-    );
-  }, [activeRow, boardState, gameStatus, scores]);
+  //   // persisting will have to be done outside of reducer
+  //   localStorage.setItem(LOCAL_STORAGE_STATS_KEY, JSON.stringify(nextStats));
+
+  //   // const newTs = new Date().valueOf();
+  //   // dispatch({ type: UPDATE_TIMESTAMP, payload: newTs })
+  //   const nextGameState = {
+  //     ...gameState,
+  //     lastCompletedTs: new Date().valueOf(),
+  //   };
+  //   localStorage.setItem(
+  //     LOCAL_STORAGE_STATE_KEY,
+  //     JSON.stringify(nextGameState)
+  //   );
+  // }, [activeRow, boardState, gameStatus, scores]);
 
   const onEnter = useCallback(() => {
+    const {
+      gameState: { activeRow, boardState, scores },
+    } = state;
+
     if (boardState[activeRow].length < MAX_WORD_LENGTH) {
-      setSubmissionErrors([...submissionErrors, "Not enough letters."]);
-      scheduleDismiss();
+      dispatchMsgAndScheduleDismiss(
+        SET_SUBMISSION_ERROR,
+        "Not enough letters."
+      );
     } else {
       if (isValidGuess(boardState[activeRow])) {
         const score = scoreWord(boardState[activeRow], wordOfTheDay);
-        const nextScores = [
-          ...scores.slice(0, activeRow),
-          score,
-          ...scores.slice(activeRow + 1),
-        ];
-        setScores(nextScores);
+        dispatch({
+          type: UPDATE_SCORES,
+          payload: score,
+        });
 
-        const nextKeyboardState = mapKeyboardScores(boardState, wordOfTheDay);
-        setKeyboardState(nextKeyboardState);
+        setKeyboardState(mapKeyboardScores(boardState, wordOfTheDay));
 
-        const nextRow = activeRow + 1;
+        if (activeRow + 1 > MAX_GUESSES - 1) {
+          dispatch({
+            type: SET_GAME_STATUS,
+            payload: GameStatus.Lose,
+          });
 
-        let lastCompletedTs = 0;
-        const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
-        if (stateFromStorage) {
-          lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
-        }
-        localStorage.setItem(
-          LOCAL_STORAGE_STATE_KEY,
-          JSON.stringify({
-            activeRow: nextRow,
-            boardState,
-            lastCompletedTs,
-            status: gameStatus,
-            scores: nextScores,
-          })
-        );
+          dispatchMsgAndScheduleDismiss(SET_GAME_OVER, wordOfTheDay);
 
-        if (nextRow > MAX_GUESSES - 1) {
-          setGameStatus(GameStatus.Lose);
-          setGameOverMsg(wordOfTheDay);
-          scheduleDismiss();
           return;
         } else {
-          setActiveRow(nextRow);
+          dispatch({ type: INCREMENT_ROW });
         }
 
         if (hasWon(score)) {
-          setGameStatus(GameStatus.Win);
-          setGameOverMsg(wordForTheWinner);
-          scheduleDismiss();
-          persistStats();
+          dispatch({
+            type: SET_GAME_STATUS,
+            payload: GameStatus.Win,
+          });
+
+          dispatchMsgAndScheduleDismiss(SET_GAME_OVER, wordForTheWinner);
+
+          // persistStats();
           return;
         }
       } else {
-        setSubmissionErrors([...submissionErrors, "Not in word list."]);
-        scheduleDismiss();
+        dispatchMsgAndScheduleDismiss(
+          SET_SUBMISSION_ERROR,
+          "Not in word list."
+        );
       }
-    }
-  }, [
-    activeRow,
-    boardState,
-    gameStatus,
-    persistStats,
-    scores,
-    submissionErrors,
-  ]);
 
-  const onDelete = useCallback(() => {
-    setBoardState([
-      ...boardState.slice(0, activeRow),
-      boardState[activeRow].slice(0, -1),
-      ...boardState.slice(activeRow + 1),
-    ]);
-  }, [activeRow, boardState]);
+      // do we need lastPlayedTs?
+      // let lastCompletedTs = 0;
+      // const stateFromStorage = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+      // if (stateFromStorage) {
+      //   lastCompletedTs = JSON.parse(stateFromStorage).lastCompletedTs;
+      // }
+      // // could this just be JSON.stringify(state.gameState) once we are using useReducer?
+      // localStorage.setItem(
+      //   LOCAL_STORAGE_STATE_KEY,
+      //   JSON.stringify({
+      //     activeRow,
+      //     boardState,
+      //     lastCompletedTs,
+      //     status: gameStatus,
+      //     scores,
+      //   })
+      // );
+    }
+  }, [state]);
+
+  const onDelete = useCallback(() => dispatch({ type: DELETE_CHAR }), []);
 
   const onCharKey = useCallback(
-    (key) => {
-      if (boardState[activeRow].length < MAX_WORD_LENGTH) {
-        setBoardState([
-          ...boardState.slice(0, activeRow),
-          (boardState[activeRow] += key),
-          ...boardState.slice(activeRow + 1),
-        ]);
-      }
-    },
-    [activeRow, boardState]
+    (key) =>
+      dispatch({
+        type: ADD_CHAR,
+        payload: key,
+      }),
+    []
   );
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
-      if (gameStatus !== GameStatus.InProgress) return;
+      const {
+        gameState: { status },
+      } = state;
+
+      if (status !== GameStatus.InProgress) return;
 
       if (!event.metaKey) {
         if (event.key === ENTER) {
@@ -187,7 +237,7 @@ function App() {
         }
       }
     },
-    [gameStatus, onCharKey, onDelete, onEnter]
+    [onCharKey, onDelete, onEnter, state]
   );
 
   useEffect(() => {
@@ -196,45 +246,66 @@ function App() {
   }, [handleKeydown]);
 
   useEffect(() => {
-    if (gameStatus !== GameStatus.InProgress) {
+    const {
+      gameState: { status },
+    } = state;
+    if (status !== GameStatus.InProgress) {
       setTimeout(() => {
+        // dispatch({ type: OPEN_MODAL })
         setIsModalOpen(true);
       }, 2100);
     }
-  }, [gameStatus]);
+  }, [state]);
 
-  const scheduleDismiss = () => {
-    setTimeout(() => {
-      setSubmissionErrors((errors) => [...errors.slice(1)]);
-      setGameOverMsg(null);
-    }, 2000);
-  };
+  const dispatchMsgAndScheduleDismiss = useCallback(
+    (type: string, payload?: any) => {
+      dispatch({ type, payload });
+
+      let removeType: string;
+      if (type === SET_SUBMISSION_ERROR) {
+        removeType = REMOVE_SUBMISSION_ERROR;
+      } else {
+        removeType = REMOVE_GAME_OVER;
+      }
+
+      setTimeout(() => {
+        dispatch({ type: removeType });
+      }, 2000);
+    },
+    []
+  );
 
   console.log(wordOfTheDay);
   return (
     <>
       <GridLayout>
-        <Grid state={boardState} scores={scores} />
+        <Grid state={state} />
       </GridLayout>
-
       <Keyboard
         onCharKey={onCharKey}
         onDelete={onDelete}
         onEnter={onEnter}
         state={keyboardState}
       />
-
-      <ToastLayout>
-        {gameOverMsg && <Toast content={gameOverMsg} />}
-        {submissionErrors?.map((error, i) => (
-          <Toast key={i} content={error} />
-        ))}
-      </ToastLayout>
-
+      <Toasts messages={state.messages} />
       <Modal close={() => setIsModalOpen(false)} isOpen={isModalOpen}>
-        {statistics && <Stats statistics={statistics} />}
+        <Stats statistics={state.statistics} />
       </Modal>
     </>
+  );
+}
+
+type ToastsProps = any;
+
+function Toasts({ messages }: ToastsProps) {
+  const { gameOverMsg, submissionErrors } = messages;
+  return (
+    <ToastLayout>
+      {gameOverMsg && <Toast content={gameOverMsg} />}
+      {submissionErrors?.map((error: any, i: number) => (
+        <Toast key={i} content={error} />
+      ))}
+    </ToastLayout>
   );
 }
 
@@ -243,25 +314,28 @@ type StatsProps = {
 };
 
 function Stats({ statistics }: StatsProps) {
-  return (
-    <>
-      <div>STATISTICS</div>
-      <div style={{ display: "flex" }}>
-        <div>Played {statistics.played}</div>
-        <div>Win % {statistics.winPercentage}</div>
-        <div>Current Streak: {statistics.currentStreak}</div>
-        <div>Max Streak {statistics.maxStreak}</div>
-      </div>
-      <div>GUESS DISTRIBUTION</div>
-      <div>BAR CHART</div>
-      <div>NEXT WORDLE</div>
-      <div style={{ display: "flex" }}>
-        <div>HH:MM:SS</div>
-        <div>|</div>
-        <div>Share</div>
-      </div>
-    </>
-  );
+  if (statistics) {
+    return (
+      <>
+        <div>STATISTICS</div>
+        <div style={{ display: "flex" }}>
+          <div>Played {statistics.played}</div>
+          <div>Win % {statistics.winPercentage}</div>
+          <div>Current Streak: {statistics.currentStreak}</div>
+          <div>Max Streak {statistics.maxStreak}</div>
+        </div>
+        <div>GUESS DISTRIBUTION</div>
+        <div>BAR CHART</div>
+        <div>NEXT WORDLE</div>
+        <div style={{ display: "flex" }}>
+          <div>HH:MM:SS</div>
+          <div>|</div>
+          <div>Share</div>
+        </div>
+      </>
+    );
+  }
+  return null;
 }
 
 const GridLayout = styled.div`
