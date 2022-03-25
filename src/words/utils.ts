@@ -10,6 +10,9 @@ import {
   Statistics,
 } from "../constants";
 
+export const MIN_WORD_LENGTH_ERROR = "Not enough letters.";
+export const INVALID_WORD_ERROR = "Not in word list.";
+
 const wordsForWinners = [
   "Fabulous",
   "Wonderful",
@@ -239,4 +242,8 @@ export function calculateStatistics(
     winPercentage,
     guessDistribution: dist,
   };
+}
+
+export function isEmpty(array: string[] | null[]) {
+  return array.flat().every((el) => !el);
 }

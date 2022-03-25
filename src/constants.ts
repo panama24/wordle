@@ -4,9 +4,6 @@ export const BACKSPACE = "Backspace";
 export const DEL = "DEL";
 export const ENTER = "Enter";
 
-export const LOCAL_STORAGE_STATS_KEY = "wordle-clone-stats";
-export const LOCAL_STORAGE_STATE_KEY = "wordle-clone-game-state";
-
 export enum GameStatus {
   InProgress,
   Win,
@@ -35,9 +32,6 @@ export type GameState = {
   scores: Scores;
 };
 
-// need a way to reset the resettable game state: activeRow, boardState, scores, gameStatus
-// maintain the lastCompletedTs
-// two reducers: game, stats
+// TODO: handle word of the day!
+// TODO: handle modal popping back up after game reset
 // game state saved to localStorage on enter and/or game over, reset (every 24 hours?)
-// stats saved to localStorage only when game over
-// merge state on load with localStorage

@@ -12,6 +12,7 @@ export const OPEN_MODAL = "OPEN_MODAL";
 export const ADD_CHAR = "ADD_CHAR";
 export const DELETE_CHAR = "DELETE_CHAR";
 export const INCREMENT_ROW = "INCREMENT_ROW";
+export const RESET = "RESET";
 export const SET_GAME_STATUS = "SET_GAME_STATUS";
 export const SUBMIT_GUESS = "SUBMIT_GUESS";
 export const UPDATE_SCORES = "UPDATE_SCORES";
@@ -57,6 +58,8 @@ export function gameStateReducer(state: any, action: Action) {
         ...state,
         isModalOpen: true,
       };
+    case RESET:
+      return action.payload;
     case SET_GAME_STATUS:
       return {
         ...state,

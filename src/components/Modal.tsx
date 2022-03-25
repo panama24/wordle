@@ -4,14 +4,16 @@ type ModalProps = {
   children: any;
   close: () => void;
   isOpen: boolean;
+  reset: (event: any) => void;
 };
 
-function Modal({ children, close, isOpen }: ModalProps) {
+function Modal({ children, close, isOpen, reset }: ModalProps) {
   return (
     <Overlay visible={isOpen}>
       <Container>
         <span onClick={close}>X</span>
         <Content>{children}</Content>
+        <button onClick={reset}>Reset</button>
       </Container>
     </Overlay>
   );
